@@ -18,9 +18,12 @@ class ExplainabilityAgent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.diagnosis_model = diagnosis_model
         self.target_layer = None
+        self._unet_model = None
+        self._unet_device = None
 
         if diagnosis_model is not None:
             self._setup_target_layer()
+        self._load_unet()
 
     def _setup_target_layer(self):
         model = self._get_active_model()
@@ -34,6 +37,27 @@ class ExplainabilityAgent:
                 print(f"[ExplainabilityAgent] Target layer set: model.features")
         else:
             print("[ExplainabilityAgent] No model available for target layer setup")
+
+    def _load_unet(self):
+        """Load the trained U-Net lung segmentation model (efficientnet-b0 backbone)."""
+        try:
+            import segmentation_models_pytorch as smp
+            unet_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+                "best_unet_model.pth",
+            )
+            if not os.path.exists(unet_path):
+                print(f"[ExplainabilityAgent] U-Net not found at {unet_path}, using OpenCV fallback")
+                return
+            model = smp.Unet(encoder_name="efficientnet-b0", encoder_weights=None, in_channels=1, classes=1)
+            sd = torch.load(unet_path, map_location=self.device, weights_only=True)
+            model.load_state_dict(sd)
+            model.eval()
+            self._unet_model = model
+            self._unet_device = self.device
+            print(f"[ExplainabilityAgent] U-Net loaded from {unet_path}")
+        except Exception as e:
+            print(f"[ExplainabilityAgent] U-Net load failed ({e}), using OpenCV fallback")
 
     def _preprocess(self, image: Image.Image, size=None):
         """Preprocess image: RGB + ImageNet normalization (matches training)."""
@@ -135,6 +159,72 @@ class ExplainabilityAgent:
             print(f"[GradCAM++] Error: {e}")
             return None
 
+    def _build_lung_mask(self, image_rgb: np.ndarray) -> np.ndarray:
+        """Lung-field mask: U-Net segmentation (preferred) or OpenCV fallback."""
+        if self._unet_model is not None:
+            return self._unet_lung_mask(image_rgb)
+        return self._opencv_lung_mask(image_rgb)
+
+    def _unet_lung_mask(self, image_rgb: np.ndarray) -> np.ndarray:
+        """Precise lung mask using the trained U-Net (efficientnet-b0 backbone, 512px)."""
+        UNET_SIZE = 512
+        MEAN, STD = 0.48732, 0.24189
+        gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+        resized = cv2.resize(gray, (UNET_SIZE, UNET_SIZE)).astype(np.float32) / 255.0
+        normed = (resized - MEAN) / STD
+        tensor = torch.from_numpy(normed).unsqueeze(0).unsqueeze(0).float().to(self._unet_device)
+        with torch.no_grad():
+            pred = torch.sigmoid(self._unet_model(tensor)).squeeze().cpu().numpy()
+        mask_small = (pred > 0.5).astype(np.uint8)
+        mask_full = cv2.resize(mask_small, (image_rgb.shape[1], image_rgb.shape[0]),
+                               interpolation=cv2.INTER_NEAREST).astype(bool)
+        if mask_full.sum() < 0.03 * mask_full.size:
+            print("[Attribution] U-Net mask too small, using OpenCV fallback")
+            return self._opencv_lung_mask(image_rgb)
+        return mask_full
+
+    def _opencv_lung_mask(self, image_rgb: np.ndarray) -> np.ndarray:
+        """Fallback: heuristic lung mask via Otsu + percentile thresholding."""
+        gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+        blur7 = cv2.GaussianBlur(gray, (7, 7), 0)
+
+        _, body_raw = cv2.threshold(blur7, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        k15 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        body = cv2.morphologyEx(body_raw, cv2.MORPH_CLOSE, k15)
+        body = cv2.morphologyEx(body, cv2.MORPH_OPEN, k15)
+        n, labels, stats, _ = cv2.connectedComponentsWithStats(body, connectivity=8)
+        if n >= 2:
+            best = max(range(1, n), key=lambda i: stats[i, cv2.CC_STAT_AREA])
+            body = (labels == best).astype(np.uint8) * 255
+
+        heavy = cv2.GaussianBlur(gray, (41, 41), 0)
+        body_pixels = np.asarray(heavy[body > 0], dtype=np.float64)
+        if len(body_pixels) == 0:
+            return np.ones(gray.shape, dtype=bool)
+        thresh = float(np.percentile(body_pixels, 50))
+        lung = ((heavy < thresh) & (body > 0)).astype(np.uint8) * 255
+
+        k5 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        lung = cv2.morphologyEx(lung, cv2.MORPH_CLOSE, k5)
+        lung = cv2.morphologyEx(lung, cv2.MORPH_OPEN, k5)
+
+        h, w = lung.shape
+        half = w // 2
+        result = np.zeros((h, w), dtype=bool)
+        for x0, x1 in ((0, half), (half, w)):
+            side = np.zeros_like(lung)
+            side[:, x0:x1] = lung[:, x0:x1]
+            n2, labels2, stats2, _ = cv2.connectedComponentsWithStats(side, connectivity=8)
+            if n2 < 2:
+                continue
+            best2 = max(range(1, n2), key=lambda i: stats2[i, cv2.CC_STAT_AREA])
+            result |= (labels2 == best2)
+
+        if result.sum() < 0.03 * gray.size:
+            print("[Attribution] OpenCV mask heuristic failed, using full frame")
+            result[:] = True
+        return result
+
     def _generate_shap(self, image: Image.Image, case_id: str, target_class: int = 0) -> tuple[str, list[dict]] | None:
         try:
             from captum.attr import IntegratedGradients
@@ -181,16 +271,20 @@ class ExplainabilityAgent:
 
             input_size = config.MODEL_INPUT_SIZE
             img_384 = cv2.resize(np.array(image.convert("RGB")), input_size)
+            lung_mask = self._build_lung_mask(img_384)
             if img_384.ndim == 3:
                 img_display = cv2.cvtColor(img_384, cv2.COLOR_RGB2GRAY)
             else:
                 img_display = img_384
 
             sv_norm = sv_clipped / (v_max + 1e-10)
-            colormap_input = (sv_norm + 1) / 2
+            # Boost weak attributions with power curve (sqrt) for visible heatmap
+            sv_boosted = np.sign(sv_norm) * np.power(np.abs(sv_norm), 0.4)
+            colormap_input = (sv_boosted + 1) / 2
             cmap = matplotlib.colormaps['RdBu_r']
             rgba = cmap(colormap_input)
-            alpha = np.clip(np.abs(sv_norm) * 0.8, 0, 0.8)
+            alpha = np.clip(np.abs(sv_boosted) * 0.9, 0, 0.9)
+            alpha *= lung_mask
             rgba[:, :, 3] = alpha
 
             fig, ax = plt.subplots(1, 1, figsize=(6, 6))
@@ -212,7 +306,7 @@ class ExplainabilityAgent:
             plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
             plt.close()
             print(f"[Attribution] Saved to {output_path} (class={pred_label}, conf={pred_conf:.1%}, IntegratedGradients)")
-            return output_path, self._regional_importance(sv_clipped)
+            return output_path, self._regional_importance(sv_clipped, lung_mask)
 
         except ImportError:
             print("[Attribution] captum not installed, skipping")
@@ -221,8 +315,12 @@ class ExplainabilityAgent:
             print(f"[Attribution] Error: {e}")
             return None
 
-    def _regional_importance(self, attribution: np.ndarray) -> list[dict]:
-        """Aggregate pixel attribution into six lung-zone importance scores (percent)."""
+    def _regional_importance(self, attribution: np.ndarray, mask: np.ndarray | None = None) -> list[dict]:
+        """Aggregate pixel attribution into six lung-zone importance scores (percent).
+
+        When a lung mask is provided, only attribution inside the masked lung
+        pixels contributes to each zone's score.
+        """
         h, w = attribution.shape
         bands = ["Upper", "Middle", "Lower"]
         sides = ["Left", "Right"]
@@ -231,10 +329,15 @@ class ExplainabilityAgent:
             y0, y1 = int(h * band_i / 3), int(h * (band_i + 1) / 3)
             for side_i, side_name in enumerate(sides):
                 x0, x1 = int(w * side_i / 2), int(w * (side_i + 1) / 2)
-                zone = np.abs(attribution[y0:y1, x0:x1])
+                zone_abs = np.abs(attribution[y0:y1, x0:x1])
+                if mask is not None:
+                    zone_mask = mask[y0:y1, x0:x1]
+                    mean = float(zone_abs[zone_mask].mean()) if zone_mask.any() else 0.0
+                else:
+                    mean = float(zone_abs.mean())
                 zones.append({
                     "feature": f"{band_name} {side_name} Lung",
-                    "importance": float(zone.mean()),
+                    "importance": mean,
                 })
         total = sum(z["importance"] for z in zones)
         if total > 0:
