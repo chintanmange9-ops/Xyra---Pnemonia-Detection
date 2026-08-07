@@ -23,6 +23,11 @@ FAISS_METADATA_PATH = os.path.join(BASE_DIR, "knowledge", "metadata.json")
 FAISS_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 FAISS_DIMENSION = 384
 
+# PDF vector store (preferred over the PubMed-seeded index when present)
+PDF_VECTOR_STORE_DIR = os.path.join(BASE_DIR, "knowledge", "pdf_store")
+PDF_INDEX_PATH = os.path.join(PDF_VECTOR_STORE_DIR, "faiss.index")
+PDF_CHUNKS_PATH = os.path.join(PDF_VECTOR_STORE_DIR, "chunks.json")
+
 # Output
 OUTPUT_DIR = os.path.join(BASE_DIR, "static", "outputs")
 

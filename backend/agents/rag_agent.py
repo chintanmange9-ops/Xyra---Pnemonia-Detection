@@ -16,7 +16,9 @@ class RAGAgent:
     def __init__(self):
         self.index = None
         self.metadata = []
+        self.chunks = []
         self.embedder = None
+        self.store_kind = None
         self._initialized = False
         self._init_lock = threading.Lock()
 
@@ -27,15 +29,20 @@ class RAGAgent:
 
             self.embedder = SentenceTransformer(config.FAISS_EMBEDDING_MODEL)
 
+            if self._load_pdf_store(faiss):
+                return
+
             if os.path.exists(config.FAISS_INDEX_PATH):
                 self.index = faiss.read_index(config.FAISS_INDEX_PATH)
                 with open(config.FAISS_METADATA_PATH, "r") as f:
                     self.metadata = json.load(f)
+                self.store_kind = "pubmed"
                 print(f"[RAG] Loaded FAISS index with {self.index.ntotal} vectors")
             else:
                 self.index = faiss.IndexFlatL2(config.FAISS_DIMENSION)
                 self._seed_from_pubmed()
                 self._save_index()
+                self.store_kind = "pubmed"
                 print(f"[RAG] Built new FAISS index with {self.index.ntotal} vectors")
 
         except ImportError as e:
@@ -43,6 +50,22 @@ class RAGAgent:
             print("[RAG] RAG agent disabled, will use online PubMed only")
         except Exception as e:
             print(f"[RAG] Init error: {e}")
+
+    def _load_pdf_store(self, faiss) -> bool:
+        try:
+            if not (os.path.exists(config.PDF_INDEX_PATH) and os.path.exists(config.PDF_CHUNKS_PATH)):
+                return False
+            self.index = faiss.read_index(config.PDF_INDEX_PATH)
+            with open(config.PDF_CHUNKS_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.chunks = data["chunks"]
+            self.metadata = data["metadata"]
+            self.store_kind = "pdf"
+            print(f"[RAG] Loaded PDF vector store with {self.index.ntotal} vectors")
+            return True
+        except Exception as e:
+            print(f"[RAG] PDF store load error: {e}")
+            return False
 
     def _seed_from_pubmed(self, queries=None, max_results_per_query=10):
         """Fetch clinical guidelines from PubMed and build initial index."""
@@ -145,14 +168,20 @@ class RAGAgent:
             return []
 
         try:
-            query_embedding = self.embedder.encode([query])
+            normalize = self.store_kind == "pdf"
+            query_embedding = self.embedder.encode([query], normalize_embeddings=normalize)
             query_embedding = np.array(query_embedding).astype("float32")
 
             distances, indices = self.index.search(query_embedding, min(top_k, self.index.ntotal))
 
             results = []
             for dist, idx in zip(distances[0], indices[0]):
-                if idx < len(self.metadata) and dist < 1.5:
+                if idx == -1:
+                    continue
+                if self.store_kind == "pdf":
+                    if idx < len(self.chunks):
+                        results.append(self.chunks[idx])
+                elif idx < len(self.metadata) and dist < 1.5:
                     results.append(self.metadata[idx]["text"])
 
             return results

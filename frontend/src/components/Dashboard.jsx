@@ -9,10 +9,11 @@ import ImageSlider from './ui/ImageSlider';
 
 const Dashboard = ({ results, imageUrl, onReset }) => {
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [openSource, setOpenSource] = useState(null);
 
   if (!results) return null;
 
-  const { probabilities, prediction, isValidated, shapAnalysis, report, regions } = results;
+  const { probabilities, prediction, isValidated, shapAnalysis, report, regions, recommendations } = results;
 
   const getPredictionColor = (pred) => {
     switch (pred) {
@@ -162,8 +163,24 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
                 </div>
                 
                 <div className="report-content">
-                  <TypewriterText text={report?.text || 'Generating report...'} />
+                  <TypewriterText text={report?.text || 'Generating report...'} trigger />
                 </div>
+
+                {recommendations?.length > 0 && (
+                  <div className="recommendations">
+                    <h4 className="recommendations-title">Recommendations</h4>
+                    <ul className="recommendations-list">
+                      {recommendations.map((rec, idx) => (
+                        <li key={idx} className="recommendation-item">
+                          <span className="recommendation-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="evidence-section">
                   <button 
@@ -177,8 +194,22 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
                   <div className={`evidence-content ${sourcesOpen ? 'open' : ''}`}>
                     {report?.sources?.map((source, idx) => (
                       <div key={idx} className="source-card">
-                        <h4 className="source-title">{source.title}</h4>
+                        <div
+                          className="source-header"
+                          role="button"
+                          onClick={() => setOpenSource(openSource === idx ? null : idx)}
+                        >
+                          <h4 className="source-title">{source.title}</h4>
+                          {source.text && source.text.length > 110 && (
+                            <span className="source-toggle">
+                              {openSource === idx ? 'Show less' : 'Show more'}
+                            </span>
+                          )}
+                        </div>
                         <p className="source-meta">{source.journal}, {source.year}</p>
+                        {openSource === idx && source.text && (
+                          <p className="source-text">{source.text}</p>
+                        )}
                       </div>
                     ))}
                   </div>

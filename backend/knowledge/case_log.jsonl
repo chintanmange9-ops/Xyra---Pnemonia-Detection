@@ -73,3 +73,7 @@
 {"case_id": "PX-5F1C2", "timestamp": "2026-08-07T16:52:56.548315+00:00", "label": "BACTERIAL", "confidence": 0.8294, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": false, "image_path": ""}
 {"case_id": "PX-A559A", "timestamp": "2026-08-07T17:02:15.071285+00:00", "label": "BACTERIAL", "confidence": 0.8294, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": false, "image_path": ""}
 {"case_id": "PX-E49CF", "timestamp": "2026-08-07T17:23:11.074893+00:00", "label": "BACTERIAL", "confidence": 0.8294, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": false, "image_path": ""}
+{"case_id": "PX-3B512", "timestamp": "2026-08-07T17:33:12.305952+00:00", "label": "NORMAL", "confidence": 0.6874, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": true, "image_path": ""}
+{"case_id": "PX-F4C11", "timestamp": "2026-08-07T17:35:32.101350+00:00", "label": "NORMAL", "confidence": 0.6062, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": true, "image_path": ""}
+{"case_id": "PX-7DDF6", "timestamp": "2026-08-07T17:49:28.696107+00:00", "label": "NORMAL", "confidence": 0.6062, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": true, "image_path": ""}
+{"case_id": "PX-F14B1", "timestamp": "2026-08-07T18:10:11.348999+00:00", "label": "NORMAL", "confidence": 0.6062, "retry_count": 0, "pipeline_status": "APPROVED", "user_override": null, "hard_case": true, "image_path": ""}

@@ -239,6 +239,7 @@ class PipelineOrchestrator:
             year_match = re.search(r"\b(19|20)\d{2}\b", text)
             sources.append({
                 "title": text[:110] + ("..." if len(text) > 110 else ""),
+                "text": text,
                 "journal": "PubMed",
                 "year": year_match.group(0) if year_match else "N/A",
             })

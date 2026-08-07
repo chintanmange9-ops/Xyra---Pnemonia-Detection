@@ -6,15 +6,22 @@ const TypewriterText = ({ text = '', speed = 20, onComplete, trigger = false }) 
 
   useEffect(() => {
     if (!trigger) return;
-    
+
+    if (!text) {
+      setDisplayedText('');
+      setIsTyping(false);
+      return;
+    }
+
     setIsTyping(true);
     let index = 0;
-    
+
     // Clear initial state when triggered
     setDisplayedText('');
 
     const intervalId = setInterval(() => {
-      setDisplayedText((prev) => prev + text.charAt(index));
+      const char = text.charAt(index);
+      setDisplayedText((prev) => prev + char);
       index++;
 
       if (index === text.length) {
