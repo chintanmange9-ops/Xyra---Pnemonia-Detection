@@ -1,14 +1,14 @@
-"""ingest_vector_db.py — builds the PDF-based FAISS knowledge store.
+"""ingest_vector_db.py — builds the PDF/text-based FAISS knowledge store.
 
 Usage:
-    python ingest_vector_db.py --pdf_dir <folder_of_pdfs>
+    python ingest_vector_db.py --pdf_dir <folder_of_pdfs_and_texts>
 
 Output (default: backend/knowledge/pdf_store/):
     faiss.index    -> cosine-similarity FAISS index (normalized embeddings)
     chunks.json    -> the text chunks + metadata (source, page, chunk_id)
 
 The RAGAgent prefers this store over the PubMed-seeded index whenever it exists.
-Re-run after adding new PDFs.
+Re-run after adding new PDFs or text files.
 """
 
 import argparse
@@ -17,7 +17,6 @@ from pathlib import Path
 
 import faiss
 import numpy as np
-from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
 import config
@@ -28,11 +27,20 @@ MIN_CHUNK_LEN = 40
 
 
 def extract_text_by_page(pdf_path: str):
+    from pypdf import PdfReader
     reader = PdfReader(pdf_path)
     for page_num, page in enumerate(reader.pages):
         text = page.extract_text() or ""
         if text.strip():
             yield page_num, text
+
+
+def extract_text_from_file(txt_path: str):
+    """Extract text from a plain text file (single 'page')."""
+    with open(txt_path, "r", encoding="utf-8") as f:
+        text = f.read()
+    if text.strip():
+        yield 0, text
 
 
 def chunk_text(text: str, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
@@ -51,25 +59,32 @@ def build_index(pdf_dir: str, out_dir: str):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     pdf_files = sorted(pdf_dir.glob("*.pdf"))
-    if not pdf_files:
-        raise FileNotFoundError(f"No PDFs found in {pdf_dir}")
+    txt_files = sorted(pdf_dir.glob("*.txt"))
+    all_files = pdf_files + txt_files
+    if not all_files:
+        raise FileNotFoundError(f"No PDFs or text files found in {pdf_dir}")
 
-    print(f"Found {len(pdf_files)} PDFs. Loading embedding model '{config.FAISS_EMBEDDING_MODEL}'...")
+    print(f"Found {len(pdf_files)} PDFs + {len(txt_files)} text files. Loading embedding model '{config.FAISS_EMBEDDING_MODEL}'...")
     embedder = SentenceTransformer(config.FAISS_EMBEDDING_MODEL)
 
     all_chunks = []
     all_metadata = []
 
-    for pdf_path in pdf_files:
-        for page_num, page_text in extract_text_by_page(str(pdf_path)):
+    for file_path in all_files:
+        if file_path.suffix.lower() == ".pdf":
+            extractor = lambda p: extract_text_by_page(str(p))
+        else:
+            extractor = lambda p: extract_text_from_file(str(p))
+
+        for page_num, page_text in extractor(file_path):
             for i, chunk in enumerate(chunk_text(page_text)):
                 if len(chunk.strip()) < MIN_CHUNK_LEN:
                     continue
                 all_chunks.append(chunk)
                 all_metadata.append({
-                    "source": pdf_path.name,
+                    "source": file_path.name,
                     "page": page_num + 1,
-                    "chunk_id": f"{pdf_path.stem}_p{page_num + 1}_c{i}",
+                    "chunk_id": f"{file_path.stem}_p{page_num + 1}_c{i}",
                 })
 
     if not all_chunks:

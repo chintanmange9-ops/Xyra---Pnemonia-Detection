@@ -1,0 +1,46 @@
+Spectrum of imaging findings in pulmonary infections. Part 1: Bacterial and viral.
+Source: Polish Journal of Radiology, 2019;84:e205-e213. PMC6717952. Open Access (CC BY-NC-ND 4.0).
+Authors: Mandeep Garg, Nidhi Prabhakar, Ajay Gulati, Ritesh Agarwal, Sahajal Dhooria.
+Postgraduate Institute of Medical Education and Research, India.
+
+ABSTRACT:
+Chest radiography is generally the first imaging modality used for the evaluation of pneumonia. It can establish the presence of pneumonia, determine its extent and location, and assess the response to treatment. Although not diagnostic, certain imaging findings may suggest a particular microbial cause over others. Knowledge of whether pneumonia is community-acquired or nosocomial, as well as the age and immune status of the patient, can help in narrowing the differential diagnoses.
+
+INTRODUCTION:
+Pneumonia is defined as an infection of the lower respiratory tract, which involves the lung parenchyma. Pneumonia usually refers to infection by a pathogenic organism, which results in consolidation of the lung. Pneumonitis is generally used in the context of non-infective inflammation that primarily involves the alveolar wall.
+
+Chest radiographs are the most widely used imaging modality. A chest radiograph can establish the presence of pneumonia, determine its extent and location, and assess the response to treatment. It can also diagnose complications like pleural effusion, pneumothorax, and abscess formation.
+
+Pneumonia was classically divided according to its morphological pattern into: lobar pneumonia, bronchopneumonia, and interstitial pneumonia. Lobar consolidation is characterised by confluent areas of consolidation, usually confined to one segment or lobe. In bronchopneumonia, there are centrilobular nodules that coalesce to cause consolidation. Interstitial pneumonia involves bronchial or bronchiolar wall and pulmonary interstitium, leading to septal thickening, nodules, and ground glass opacities.
+
+In the current era, pneumonias are preferably classified as community-acquired, nosocomial, or aspiration pneumonia, depending on their origin.
+
+BACTERIAL PNEUMONIA:
+The most common causes of community-acquired pneumonia (CAP) are Streptococcus pneumoniae, Haemophilus influenzae, Mycoplasma pneumoniae, Chlamydia pneumoniae, and Legionella pneumophila. Hospital-acquired pneumonia (HAP) is more commonly caused by Pseudomonas aeruginosa, Enterobacteriae, and Staphylococcus aureus.
+
+Streptococcus pneumoniae: Most common cause of CAP. Lobar pneumonia is the most common imaging appearance, predominantly involving lower lobes. Lung volume is not altered, and cavitation is rare. A small amount of reactive pleural effusion is usually seen.
+
+Staphylococcus aureus: Causes hospital-acquired or ventilator-associated pneumonia. Radiographic findings show bronchopneumonia pattern. CT shows centrilobular nodules and bronchial wall thickening. Cavitation may appear forming lung abscesses. Pneumatoceles (thin-walled, air-filled cystic spaces) can appear during the first week.
+
+Mycoplasma pneumoniae: Most commonly affects young people. Chest radiograph may show reticulonodular opacities or patchy areas of consolidation. CT shows centrilobular nodules, GGO, and lobular areas of consolidation with bronchial wall thickening.
+
+Legionella pneumophila: Chest radiograph shows rapidly progressing consolidation, usually segmental and peripheral initially, becoming bilateral in 50% of cases. CT shows multilobar/multisegmental air space disease interspersed with GGO.
+
+Klebsiella pneumonia: Usually develops in elderly patients with chronic pulmonary disease or alcoholics. Shows homogeneous parenchymal consolidation containing air bronchograms. Right upper lobe is most commonly involved. Characteristic bulging of adjacent interlobar fissure due to large inflammatory exudate.
+
+Aspiration pneumonia: Most commonly affects posterior segment of upper lobes and superior segments of lower lobes. Right lung is usually involved more than left. Radiographically shows bronchopneumonia pattern. May show cavitation or abscess formation.
+
+VIRAL PNEUMONIA:
+Viral respiratory infections are common in children. Most common viral infections are RSV, parainfluenza, adenovirus, and influenza virus. In immunocompromised patients, viral infections are usually secondary to CMV and other herpes viruses.
+
+Pneumonia is initially interstitial and later involves lung adjacent to terminal bronchioles. Viral infections predispose to superimposed bacterial infection.
+
+Influenza virus: Chest radiograph shows segmental consolidation with basal predominance, which may become rapidly confluent to give an ARDS-like picture. CT shows diffuse bilateral GGO, consolidation, centrilobular nodules, and bronchial wall thickening.
+
+RSV: Most common cause of viral lower respiratory tract infection in children. Chest radiograph may show peribronchial infiltrates with associated overinflation. CT shows centrilobular nodules and tree-in-bud appearance.
+
+Adenovirus: May show scattered patchy/confluent opacities and hilar lymphadenopathy. CT may show bilateral consolidation, areas of GGO, nodules, and pleural effusion.
+
+CMV: Seen in AIDS patients and transplant recipients. CT shows consolidation, GGO, irregular reticular opacities, or centrilobular nodules.
+
+Varicella pneumonia: More common in adults. Chest radiograph shows multiple small discrete acinar nodules scattered throughout both lungs. CT shows multiple small random nodules.
