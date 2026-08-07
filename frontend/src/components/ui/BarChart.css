@@ -1,0 +1,66 @@
+.barchart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.barchart-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.barchart-label {
+  flex: 0 0 120px; /* Fixed width for labels */
+  font-size: 0.875rem;
+  color: var(--color-primary, #0A1628);
+  font-weight: 500;
+  padding-right: 12px;
+}
+
+.barchart-bar-wrapper {
+  flex: 1;
+  background-color: #E2E8F0;
+  border-radius: 4px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.barchart-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease-out;
+  min-width: 2px; /* to ensure visibility at 0% if needed, but 0% will just be hidden mostly */
+}
+
+.barchart-value {
+  flex: 0 0 60px; /* Fixed width for values */
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary, #0A1628);
+  padding-left: 12px;
+}
+
+@media (max-width: 480px) {
+  .barchart-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .barchart-label {
+    flex: 0 0 100%;
+    padding-right: 0;
+  }
+  
+  .barchart-bar-wrapper {
+    flex: 1;
+  }
+  
+  .barchart-value {
+    flex: 0 0 auto;
+  }
+}
