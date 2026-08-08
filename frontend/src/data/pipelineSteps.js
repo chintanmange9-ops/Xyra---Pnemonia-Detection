@@ -37,7 +37,7 @@ const pipelineSteps = [
     title: 'Classification',
     description: 'The core AI model analyzes the preprocessed X-ray images to detect patterns indicative of specific diseases.',
     details: [
-      'EfficientNetV2-S deep learning model',
+      'EfficientNet-B2 deep learning model',
       '3-class prediction: Normal, Bacterial, Viral',
       'Softmax output for probability distributions'
     ],

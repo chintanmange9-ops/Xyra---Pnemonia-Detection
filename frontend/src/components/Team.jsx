@@ -33,22 +33,18 @@ const Team = () => {
             <path d="M2 12l10 5 10-5"/>
           </svg>
         );
-      case 'unet':
-        return (
-          <svg className="tech-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="8.5" y="14" width="7" height="7" rx="1"/>
-            <path d="M6.5 10v4h2"/>
-            <path d="M17.5 10v4h-2"/>
-          </svg>
-        );
       case 'faiss':
         return (
           <svg className="tech-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <ellipse cx="12" cy="6" rx="8" ry="3"/>
             <path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/>
             <path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
+          </svg>
+        );
+      case 'gemini':
+        return (
+          <svg className="tech-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2z"/>
           </svg>
         );
       case 'gemini':

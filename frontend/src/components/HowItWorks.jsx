@@ -7,7 +7,7 @@ import ScrollReveal from './ui/ScrollReveal';
 const defaultSteps = [
   { title: 'Image Upload', description: 'Upload a standard chest X-ray image in DICOM, PNG, or JPEG format.', details: ['Secure upload', 'Format validation', 'Preprocessing'] },
   { title: 'Image Preprocessing', description: 'The image is resized, normalized, and enhanced for the AI model.', details: ['Noise reduction', 'Contrast enhancement', 'Auto-cropping'] },
-  { title: 'Feature Extraction', description: 'EfficientNetV2-S extracts complex visual features from the X-ray.', details: ['Deep learning backbone', 'High-level feature maps', 'Spatial hierarchies'] },
+  { title: 'Feature Extraction', description: 'EfficientNet-B2 extracts complex visual features from the X-ray.', details: ['Deep learning backbone', 'High-level feature maps', 'Spatial hierarchies'] },
   { title: 'Classification', description: 'The model classifies the image as Normal, Bacterial, or Viral Pneumonia.', details: ['Softmax probabilities', 'Confidence scores', 'Multi-class detection'] },
   { title: 'Explainability (XAI)', description: 'Grad-CAM and SHAP generate heatmaps showing which areas influenced the decision.', details: ['Visual heatmaps', 'Feature importance', 'Clinical validation'] },
   { title: 'Report Generation', description: 'RAG and an LLM generate a comprehensive, human-readable medical report.', details: ['Contextual insights', 'Actionable recommendations', 'PDF export'] }

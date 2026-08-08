@@ -145,7 +145,8 @@ class RAGAgent:
         except Exception as e:
             print(f"[RAG] Failed to save index: {e}")
 
-    def run(self, diagnosis_context: str, query_text: str | None = None) -> list[str]:
+    def run(self, diagnosis_context: str, query_text: str | None = None) -> list[dict]:
+        """Returns list of {"text": ..., "source": ..., "page": ...} dicts."""
         if not self._initialized:
             with self._init_lock:
                 if not self._initialized:
@@ -161,9 +162,12 @@ class RAGAgent:
 
         print("[RAG] No good local results, falling back to PubMed online")
         online_results = self._fetch_pubmed(query_text, max_results=5)
-        return online_results if online_results else ["No relevant clinical guidelines found."]
+        if online_results:
+            return [{"text": t, "source": "pubmed", "page": 0} for t in online_results]
+        return [{"text": "No relevant clinical guidelines found.", "source": "N/A", "page": 0}]
 
-    def _search_local(self, query: str, top_k: int = 5) -> list[str]:
+    def _search_local(self, query: str, top_k: int = 5) -> list[dict]:
+        """Search local FAISS index. Returns list of {"text": ..., "source": ..., "page": ...}."""
         if self.index is None or self.index.ntotal == 0 or self.embedder is None:
             return []
 
@@ -180,9 +184,18 @@ class RAGAgent:
                     continue
                 if self.store_kind == "pdf":
                     if idx < len(self.chunks):
-                        results.append(self.chunks[idx])
+                        meta = self.metadata[idx] if idx < len(self.metadata) else {}
+                        results.append({
+                            "text": self.chunks[idx],
+                            "source": meta.get("source", "unknown"),
+                            "page": meta.get("page", 0),
+                        })
                 elif idx < len(self.metadata) and dist < 1.5:
-                    results.append(self.metadata[idx]["text"])
+                    results.append({
+                        "text": self.metadata[idx].get("text", ""),
+                        "source": self.metadata[idx].get("source", "pubmed"),
+                        "page": 0,
+                    })
 
             return results
 

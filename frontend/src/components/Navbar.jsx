@@ -40,7 +40,7 @@ const Navbar = ({ activeSection }) => {
             <path d="M12 3V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="logo-text">Group2</span>
+          <span className="logo-text">Xyra</span>
         </a>
 
         <div className="desktop-menu">

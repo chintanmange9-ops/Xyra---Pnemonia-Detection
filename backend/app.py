@@ -36,7 +36,7 @@ def index():
         "service": "LungAI Backend",
         "status": "running",
         "frontend": "http://localhost:5173",
-        "endpoints": ["/api/status", "/api/analyze", "/api/stats"],
+        "endpoints": ["/api/status", "/api/analyze", "/api/download-report", "/api/stats"],
     })
 
 
@@ -90,6 +90,32 @@ def api_stats():
     p = get_pipeline()
     stats = p.learner.get_stats()
     return jsonify(stats)
+
+
+@app.route("/api/download-report", methods=["POST", "OPTIONS"])
+def api_download_report():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    data = request.get_json(silent=True)
+    if not data or "result" not in data:
+        return jsonify({"error": "No analysis result provided"}), 400
+
+    try:
+        from report_generator import generate_report
+        pdf_bytes = generate_report(data["result"])
+        from flask import send_file
+        import io
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"LungAI_Report_{data['result'].get('case_id', 'report')}.pdf",
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

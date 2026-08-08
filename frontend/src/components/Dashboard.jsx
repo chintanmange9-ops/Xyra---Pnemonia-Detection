@@ -246,7 +246,27 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
           <button className="btn-primary" onClick={onReset}>
             Analyze Another X-Ray
           </button>
-          <button className="btn-outline" onClick={() => alert('Downloading report...')}>
+          <button className="btn-outline" onClick={async () => {
+            try {
+              const resp = await fetch('http://localhost:5000/api/download-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ result: results }),
+              });
+              if (!resp.ok) throw new Error('Failed to generate report');
+              const blob = await resp.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `LungAI_Report_${results.case_id || 'report'}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            } catch (err) {
+              alert('Download failed: ' + err.message);
+            }
+          }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download Report
           </button>

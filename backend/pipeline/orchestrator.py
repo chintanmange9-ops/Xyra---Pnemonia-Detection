@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import time
 import uuid
 import traceback
@@ -98,7 +99,7 @@ class PipelineOrchestrator:
         print(f"[Pipeline] Module 3 done in {time.time()-t0:.1f}s")
 
         # Module 4: Reasoning & Validation
-        rag_context = ["No clinical guidelines available."]
+        rag_context: list[dict] = [{"text": "No clinical guidelines available.", "source": "N/A", "page": 0}]
         t0 = time.time()
         try:
             print("[Pipeline] Module 4: Reasoning & Validation...")
@@ -111,10 +112,13 @@ class PipelineOrchestrator:
                 print(f"[Pipeline] RAG failed (continuing without): {e}")
             print(f"[Pipeline] RAG done in {time.time()-t_rag:.1f}s")
 
+            # Extract plain text for synthesizer and validator
+            rag_texts = [item["text"] if isinstance(item, dict) else item for item in rag_context]
+
             t_llm = time.time()
             llm_result = {}
             try:
-                llm_result = self.synthesizer.run(diagnosis_result, explainability_result, rag_context)
+                llm_result = self.synthesizer.run(diagnosis_result, explainability_result, rag_texts)
             except Exception as e:
                 print(f"[Pipeline] LLM synthesis failed: {e}")
                 llm_result = self.synthesizer.fallback_synthesis(diagnosis_result, explainability_result)
@@ -123,7 +127,7 @@ class PipelineOrchestrator:
             full_result = self._merge_results(
                 diagnosis_result, explainability_result, llm_result
             )
-            full_result = self.validator.run(full_result, rag_context)
+            full_result = self.validator.run(full_result, rag_texts)
 
         except Exception as e:
             print(f"[Pipeline] Module 4 failed: {e}")
@@ -187,8 +191,7 @@ class PipelineOrchestrator:
             return "Fair"
         return "Good"
 
-    def _map_to_frontend(self, full_result: dict, rag_context: list[str] | None = None) -> dict:
-        import re
+    def _map_to_frontend(self, full_result: dict, rag_context: list[dict] | None = None) -> dict:
         diagnosis = full_result.get("diagnosis", {})
         label = diagnosis.get("label", "Unknown")
         probs = diagnosis.get("probabilities", {})
@@ -229,18 +232,38 @@ class PipelineOrchestrator:
         }
         return frontend
 
-    def _build_sources(self, rag_context: list[str]) -> list[dict]:
-        import re
+    def _build_sources(self, rag_context: list[dict]) -> list[dict]:
         sources = []
-        for text in rag_context[:4]:
-            text = (text or "").strip()
+        for item in rag_context[:4]:
+            if isinstance(item, str):
+                text = item.strip()
+                source_name = "PubMed"
+            elif isinstance(item, dict):
+                text = (item.get("text") or "").strip()
+                raw_source = item.get("source", "pubmed")
+                source_name = self._format_source_name(raw_source)
+            else:
+                continue
             if not text:
                 continue
             year_match = re.search(r"\b(19|20)\d{2}\b", text)
             sources.append({
                 "title": text[:110] + ("..." if len(text) > 110 else ""),
                 "text": text,
-                "journal": "PubMed",
+                "journal": source_name,
                 "year": year_match.group(0) if year_match else "N/A",
             })
         return sources
+
+    @staticmethod
+    def _format_source_name(raw: str) -> str:
+        """Convert a source filename/path into a human-readable label."""
+        if not raw or raw in ("pubmed", "N/A", "unknown"):
+            return "PubMed"
+        basename = os.path.basename(raw)
+        name = os.path.splitext(basename)[0]
+        name = name.replace("_", " ").replace("-", " ")
+        name = re.sub(r"\s+", " ", name).strip()
+        if len(name) > 60:
+            name = name[:60].rsplit(" ", 1)[0]
+        return name or "PubMed"

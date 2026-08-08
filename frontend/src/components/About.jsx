@@ -17,7 +17,7 @@ const About = () => {
       )
     },
     {
-      title: 'EfficientNetV2-S',
+      title: 'EfficientNet-B2',
       description: 'Advanced lightweight neural network architecture fine-tuned for classifying normal, bacterial, and viral pneumonia with state-of-the-art precision.',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feature-icon">
