@@ -12,46 +12,27 @@ ATTR_SIZE = (256, 256)  # Integrated Gradients runs at this resolution (cheaper)
 
 
 class ExplainabilityAgent:
-    """Module 3: Grad-CAM and Integrated Gradients for 3-class model."""
+    """Module 3: Integrated Gradients (SHAP) for 3-class model — Grad-CAM removed per request."""
 
     def __init__(self, diagnosis_model=None):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.diagnosis_model = diagnosis_model
-        self.target_layer = None
         self._unet_model = None
         self._unet_device = None
-
-        if diagnosis_model is not None:
-            self._setup_target_layer()
         self._load_unet()
-
-    def _setup_target_layer(self):
-        model = self._get_active_model()
-        if model is not None:
-            # For EfficientNet-B2, use features[7] (last MBConv block) for better spatial localization
-            if hasattr(model.features, '__getitem__') and len(model.features) >= 8:
-                self.target_layer = model.features[7]
-                print(f"[ExplainabilityAgent] Target layer set: model.features[7] (MBConv block)")
-            else:
-                self.target_layer = model.features
-                print(f"[ExplainabilityAgent] Target layer set: model.features")
-        else:
-            print("[ExplainabilityAgent] No model available for target layer setup")
 
     def _load_unet(self):
         """Load the trained U-Net lung segmentation model (efficientnet-b0 backbone)."""
         try:
             import segmentation_models_pytorch as smp
-            unet_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-                "best_unet_model.pth",
-            )
+            unet_path = config.UNET_WEIGHTS
             if not os.path.exists(unet_path):
                 print(f"[ExplainabilityAgent] U-Net not found at {unet_path}, using OpenCV fallback")
                 return
             model = smp.Unet(encoder_name="efficientnet-b0", encoder_weights=None, in_channels=1, classes=1)
             sd = torch.load(unet_path, map_location=self.device, weights_only=True)
             model.load_state_dict(sd)
+            model.to(self.device)
             model.eval()
             self._unet_model = model
             self._unet_device = self.device
@@ -75,7 +56,7 @@ class ExplainabilityAgent:
         return input_tensor, img_array
 
     def run_fast(self, original_image: Image.Image, case_id: str | None = None, predicted_class: int = 0) -> dict:
-        """Run Grad-CAM + IntegratedGradients."""
+        """Run SHAP (IntegratedGradients) only — Grad-CAM removed."""
         if case_id is None:
             case_id = f"PX-{uuid.uuid4().hex[:5].upper()}"
 
@@ -83,14 +64,10 @@ class ExplainabilityAgent:
 
         result = {
             "case_id": case_id,
-            "grad_cam_url": None,
+            "grad_cam_url": None,  # Grad-CAM removed
             "shap_url": None,
             "shap_analysis": [],
         }
-
-        grad_cam_path = self._generate_gradcam(original_image, case_id, predicted_class)
-        if grad_cam_path:
-            result["grad_cam_url"] = f"/static/outputs/{os.path.basename(grad_cam_path)}"
 
         shap_result = self._generate_shap(original_image, case_id, predicted_class)
         if shap_result:
@@ -108,57 +85,6 @@ class ExplainabilityAgent:
             return self.diagnosis_model.model
         return None
 
-    def _generate_gradcam(self, image: Image.Image, case_id: str, target_class: int = 0) -> str | None:
-        try:
-            from pytorch_grad_cam import GradCAMPlusPlus
-            from pytorch_grad_cam.utils.image import show_cam_on_image
-            from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-
-            model = self._get_active_model()
-            if model is None:
-                print("[GradCAM++] No model available, skipping")
-                return None
-
-            # Use features[7] (MBConv block) for better spatial localization
-            if hasattr(model.features, '__getitem__') and len(model.features) >= 8:
-                target_layers = [model.features[7]]
-            else:
-                target_layers = [model.features]
-
-            input_tensor, img_array = self._preprocess(image)
-
-            with torch.no_grad():
-                output = model(input_tensor)
-                pred_class = output.argmax(dim=1).item()
-
-            cam = GradCAMPlusPlus(model=model, target_layers=target_layers)
-            targets = [ClassifierOutputTarget(pred_class)]
-
-            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)  # pyright: ignore[reportArgumentType]  (grad-cam stub types targets as List[Module])
-
-            with torch.no_grad():
-                class_list = config.MODEL_CLASSES
-                pred_label = class_list[pred_class] if pred_class < len(class_list) else f"Class {pred_class}"
-                pred_conf = torch.softmax(model(input_tensor), dim=1)[0][pred_class].item()
-            grayscale_cam = grayscale_cam[0]
-
-            display_array = np.array(image.convert("RGB"))
-            display_rgb = cv2.resize(display_array, config.MODEL_INPUT_SIZE)
-            original_for_overlay = display_rgb.astype(np.float32) / 255.0
-            cam_image = show_cam_on_image(original_for_overlay, grayscale_cam, use_rgb=True)
-
-            output_path = os.path.join(config.OUTPUT_DIR, f"{case_id}_gradcam.png")
-            cv2.imwrite(output_path, cv2.cvtColor(cam_image, cv2.COLOR_RGB2BGR))
-            print(f"[GradCAM++] Saved to {output_path} (class={pred_label}, conf={pred_conf:.1%})")
-            return output_path
-
-        except ImportError:
-            print("[GradCAM++] grad-cam library not installed, skipping")
-            return None
-        except Exception as e:
-            print(f"[GradCAM++] Error: {e}")
-            return None
-
     def _build_lung_mask(self, image_rgb: np.ndarray) -> np.ndarray:
         """Lung-field mask: U-Net segmentation (preferred) or OpenCV fallback."""
         if self._unet_model is not None:
@@ -167,6 +93,7 @@ class ExplainabilityAgent:
 
     def _unet_lung_mask(self, image_rgb: np.ndarray) -> np.ndarray:
         """Precise lung mask using the trained U-Net (efficientnet-b0 backbone, 512px)."""
+        assert self._unet_model is not None, "UNet not loaded"
         UNET_SIZE = 512
         MEAN, STD = 0.48732, 0.24189
         gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
@@ -174,7 +101,7 @@ class ExplainabilityAgent:
         normed = (resized - MEAN) / STD
         tensor = torch.from_numpy(normed).unsqueeze(0).unsqueeze(0).float().to(self._unet_device)
         with torch.no_grad():
-            pred = torch.sigmoid(self._unet_model(tensor)).squeeze().cpu().numpy()
+            pred = torch.sigmoid(self._unet_model(tensor)).squeeze().cpu().numpy()  # type: ignore[operator]
         mask_small = (pred > 0.5).astype(np.uint8)
         mask_full = cv2.resize(mask_small, (image_rgb.shape[1], image_rgb.shape[0]),
                                interpolation=cv2.INTER_NEAREST).astype(bool)

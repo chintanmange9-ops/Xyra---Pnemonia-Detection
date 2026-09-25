@@ -4,7 +4,7 @@ export const teamMembers = [
     name: 'Daksh Mehta',
     role: 'AI & Deep Learning Lead',
     initials: 'DM',
-    bio: 'Architected the EfficientNet-B2 classification engine, Grad-CAM, and SHAP explainability pipelines for chest X-ray diagnosis.',
+    bio: 'Architected the EfficientNet-B2 classification engine and SHAP explainability pipeline for chest X-ray diagnosis.',
     github: 'https://github.com',
     linkedin: 'https://linkedin.com'
   },
@@ -13,7 +13,7 @@ export const teamMembers = [
     name: 'Chintan Mange',
     role: 'RAG & NLP Engineer',
     initials: 'CM',
-    bio: 'Engineered the vector database indexing with FAISS and DeepSeek LLM integration for explainable clinical report generation.',
+    bio: 'Engineered the vector database indexing with FAISS and OpenRouter LLM integration for explainable clinical report generation.',
     github: 'https://github.com',
     linkedin: 'https://linkedin.com'
   },
@@ -40,8 +40,8 @@ export const projectGuide = {
 export const techStack = [
   { name: 'React', category: 'Frontend', icon: 'react' },
   { name: 'Python', category: 'Backend/AI', icon: 'python' },
-  { name: 'TensorFlow', category: 'Deep Learning', icon: 'tensorflow' },
+  { name: 'PyTorch', category: 'Deep Learning', icon: 'tensorflow' },
   { name: 'FAISS', category: 'Vector DB', icon: 'faiss' },
-  { name: 'DeepSeek LLM', category: 'LLM RAG', icon: 'gemini' },
+  { name: 'OpenRouter', category: 'LLM RAG', icon: 'openrouter' },
   { name: 'Vite', category: 'Build Tool', icon: 'vite' }
 ];

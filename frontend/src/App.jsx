@@ -9,10 +9,11 @@ import HowItWorks from './components/HowItWorks'
 import DiseaseAwareness from './components/DiseaseAwareness'
 import Upload from './components/Upload'
 import Dashboard from './components/Dashboard'
+import BatchDashboard from './components/BatchDashboard'
 import Team from './components/Team'
 import Footer from './components/Footer'
 
-const SECTION_IDS = ['home', 'about', 'how-it-works', 'awareness', 'upload', 'dashboard', 'team']
+const SECTION_IDS = ['home', 'upload', 'dashboard', 'about', 'how-it-works', 'awareness', 'team']
 
 function App() {
   // Track which section is currently in viewport for navbar highlighting
@@ -21,9 +22,11 @@ function App() {
   // Analysis state — lifted here so Upload and Dashboard can communicate
   const [analysisResults, setAnalysisResults] = useState(null)
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null)
+  const [batchResults, setBatchResults] = useState(null)
 
-  // Called by Upload when analysis completes
+  // Called by Upload when single analysis completes
   const handleAnalysisComplete = useCallback((results, imageUrl) => {
+    setBatchResults(null)
     setAnalysisResults(results)
     setUploadedImageUrl(imageUrl)
 
@@ -36,10 +39,22 @@ function App() {
     }, 300)
   }, [])
 
+  // Called by Upload when folder batch completes
+  const handleBatchComplete = useCallback((batch) => {
+    setAnalysisResults(null)
+    setUploadedImageUrl(null)
+    setBatchResults(batch)
+    setTimeout(() => {
+      const el = document.getElementById('dashboard')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 300)
+  }, [])
+
   // Called by Dashboard "Analyze Another" button
   const handleReset = useCallback(() => {
     setAnalysisResults(null)
     setUploadedImageUrl(null)
+    setBatchResults(null)
 
     // Scroll back to upload section
     setTimeout(() => {
@@ -56,15 +71,19 @@ function App() {
       
       <main>
         <Hero />
+        <Upload onAnalysisComplete={handleAnalysisComplete} onBatchComplete={handleBatchComplete} />
+        {batchResults ? (
+          <BatchDashboard batch={batchResults} onReset={handleReset} />
+        ) : (
+          <Dashboard 
+            results={analysisResults} 
+            imageUrl={uploadedImageUrl} 
+            onReset={handleReset} 
+          />
+        )}
         <About />
         <HowItWorks />
         <DiseaseAwareness />
-        <Upload onAnalysisComplete={handleAnalysisComplete} />
-        <Dashboard 
-          results={analysisResults} 
-          imageUrl={uploadedImageUrl} 
-          onReset={handleReset} 
-        />
         <Team />
       </main>
 

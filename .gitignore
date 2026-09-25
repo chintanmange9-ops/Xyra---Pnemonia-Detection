@@ -2,6 +2,14 @@ frontend/node_modules/
 frontend/dist/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
+*.log
 backend/static/outputs/
+backend/knowledge/*.jsonl
+backend/memories/
+backend/Xyra_System_Report.pdf
 .env
+.env.*
+!.env.example
 New folder (8)/

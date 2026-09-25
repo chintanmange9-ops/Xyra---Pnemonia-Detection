@@ -12,6 +12,7 @@ numpy==2.2.6
 matplotlib==3.10.6
 faiss-cpu==1.14.3
 sentence-transformers==5.6.0
+tf-keras
 requests==2.34.2
 pypdf>=4.2.0
 fpdf2>=2.8.0

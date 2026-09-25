@@ -145,13 +145,22 @@ class RAGAgent:
         except Exception as e:
             print(f"[RAG] Failed to save index: {e}")
 
+    def _ensure_initialized(self):
+        if self._initialized:
+            return
+        with self._init_lock:
+            if self._initialized:
+                return
+            self._load_or_build_index()
+            self._initialized = True
+
+    def warmup(self):
+        self._ensure_initialized()
+        return self.index is not None
+
     def run(self, diagnosis_context: str, query_text: str | None = None) -> list[dict]:
         """Returns list of {"text": ..., "source": ..., "page": ...} dicts."""
-        if not self._initialized:
-            with self._init_lock:
-                if not self._initialized:
-                    self._load_or_build_index()
-                    self._initialized = True
+        self._ensure_initialized()
 
         if query_text is None:
             query_text = diagnosis_context

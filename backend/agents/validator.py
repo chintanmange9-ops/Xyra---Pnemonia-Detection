@@ -16,19 +16,23 @@ class ValidatorAgent:
 
         confidence_pass = confidence_decimal >= self.threshold
         hallucination_pass = self._check_consistency(result, rag_context or [])
+        synthesis_pass = result.get("synthesis_status") == "openrouter"
 
-        overall_pass = confidence_pass and hallucination_pass
+        overall_pass = confidence_pass and hallucination_pass and synthesis_pass
 
         validation = {
             "validated_by": "Agent_5_Guardrail",
             "confidence_pass": confidence_pass,
             "confidence_score": round(confidence_decimal, 4),
             "hallucination_check": "PASSED" if hallucination_pass else "FAILED",
+            "synthesis_check": "PASSED" if synthesis_pass else "FALLBACK",
             "overall_pass": overall_pass,
             "retry_count": 0,
         }
 
-        if overall_pass:
+        if not synthesis_pass:
+            result["pipeline_status"] = "FALLBACK"
+        elif overall_pass:
             result["pipeline_status"] = "APPROVED"
         else:
             result["pipeline_status"] = "RETRY"

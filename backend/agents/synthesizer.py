@@ -1,97 +1,82 @@
-import re
-import requests
-import json
-
 import config
+from chat_via_openrouter import OpenRouterError, run_via_openrouter
 
 
 class SynthesizerAgent:
-    """Module 4b: LLM-based clinical narrative synthesis via OpenCode API."""
-
     SYSTEM_PROMPT = """You are an expert radiologist AI assistant specializing in chest X-ray interpretation.
-You will receive diagnostic data from a pneumonia detection model, explainability outputs,
-and relevant clinical guidelines from medical literature.
+You receive diagnostic data from a pneumonia detection model, explainability status, and relevant clinical guidelines.
 
-Your task is to synthesize this information into a structured clinical report.
-You MUST respond with ONLY a valid JSON object using this exact structure:
+Return only the primary finding detected by the model. Do not add differential diagnoses, alternative conditions, or speculative findings.
+
+Return JSON with this exact structure:
 {
-  "overall_status": "Normal or Abnormal or Requires Attention",
-  "confidence": <number 0-100>,
+  "overall_status": "Normal, Abnormal, or Requires Attention",
+  "confidence": 0,
   "findings": [
     {
-      "name": "Primary finding name (e.g. Viral Pneumonia, Bacterial Pneumonia, Normal)",
+      "name": "Primary finding name",
       "region": "Anatomical region",
-      "severity": "Normal or Mild or Moderate or Severe",
-      "confidence": <number 0-100>,
-      "description": "Detailed description of the primary finding only"
+      "severity": "Normal, Mild, Moderate, or Severe",
+      "confidence": 0,
+      "description": "Description of the primary finding only"
     }
   ],
-  "recommendations": ["Recommendation 1", "Recommendation 2"],
-  "summary": "Overall clinical summary paragraph"
-}
-
-IMPORTANT RULES:
-- List ONLY the PRIMARY finding detected by the model (the diagnosis label).
-- Do NOT include differential diagnoses, alternative conditions, or speculative findings.
-- Do NOT add multiple findings — only the single primary diagnosis from the model output.
-- Keep descriptions focused on the detected finding only."""
+  "recommendations": ["General recommendation"],
+  "summary": "Concise clinical summary"
+}"""
 
     def __init__(self):
-        self.api_url = config.LLM_API_URL
-        self.api_key = config.LLM_API_KEY
-        self.model = config.LLM_MODEL
-        self.max_tokens = config.LLM_MAX_TOKENS
+        self.model = config.OPENROUTER_MODEL
+        self.provider = config.LLM_PROVIDER
 
-    def run(
-        self,
-        diagnosis: dict,
-        explainability: dict,
-        rag_context: list[str],
-    ) -> dict:
-        prompt = self._build_prompt(diagnosis, explainability, rag_context)
+    def _expected_status(self, label):
+        if label == "NORMAL":
+            return "Normal"
+        if label in {"BACTERIAL", "VIRAL"}:
+            return "Abnormal"
+        return "Requires Attention"
 
-        try:
-            response = requests.post(
-                self.api_url,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "HTTP-Referer": "https://opencode.ai/",
-                    "X-Title": "opencode",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": self.SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": self.max_tokens,
-                },
-                timeout=30,
+    def _apply_diagnosis_constraints(self, report, diagnosis):
+        label = diagnosis.get("label")
+        expected_status = self._expected_status(label)
+        finding = report["findings"][0]
+        finding_name = finding["name"].strip().lower()
+        if report["overall_status"] != expected_status:
+            raise ValueError("overall status does not match diagnosis")
+        if label == "NORMAL":
+            matches = "normal" in finding_name and not any(
+                term in finding_name for term in ("bacterial", "viral")
             )
-            response.raise_for_status()
+        elif label in {"BACTERIAL", "VIRAL"}:
+            other_label = "viral" if label == "BACTERIAL" else "bacterial"
+            matches = label.lower() in finding_name and other_label not in finding_name
+        else:
+            matches = False
+        if not matches:
+            raise ValueError("primary finding does not match diagnosis")
+        model_confidence = float(diagnosis.get("confidence_score", 0.0))
+        model_confidence = min(max(model_confidence, 0.0), 1.0)
+        report["confidence"] = model_confidence
+        finding["confidence"] = model_confidence
+        return report
 
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-
-            if not content or not content.strip():
-                print(f"[Synthesizer] LLM returned empty response. Full JSON:\n{json.dumps(result, indent=2)[:3000]}")
-                return self.fallback_synthesis(diagnosis, explainability)
-
-            print(f"[Synthesizer] Raw LLM response:\n{content[:2000]}")
-
-            parsed = self._parse_response(content)
-            print(f"[Synthesizer] Parsed findings count: {len(parsed.get('findings', []))}")
-            return parsed
-
-        except requests.exceptions.RequestException as e:
-            print(f"[Synthesizer] API request failed: {e}")
+    def run(self, diagnosis, explainability, rag_context):
+        if diagnosis.get("label") not in {"NORMAL", "BACTERIAL", "VIRAL"}:
             return self.fallback_synthesis(diagnosis, explainability)
-        except (KeyError, IndexError, json.JSONDecodeError) as e:
-            print(f"[Synthesizer] Response parse error: {e}")
+        prompt = self._build_prompt(diagnosis, explainability, rag_context)
+        try:
+            report = run_via_openrouter(
+                system_prompt=self.SYSTEM_PROMPT,
+                user_prompt=prompt,
+            )
+            report = self._apply_diagnosis_constraints(report, diagnosis)
+            report["synthesis_status"] = "openrouter"
+            return report
+        except (OpenRouterError, ValueError, TypeError, KeyError) as exc:
+            print(f"[Synthesizer] OpenRouter synthesis unavailable: {exc}")
             return self.fallback_synthesis(diagnosis, explainability)
 
-    def _build_prompt(self, diagnosis: dict, explainability: dict, rag_context: list[str]) -> str:
+    def _build_prompt(self, diagnosis, explainability, rag_context):
         parts = [
             "## Diagnostic Model Output",
             f"- Label: {diagnosis.get('label', 'Unknown')}",
@@ -100,116 +85,55 @@ IMPORTANT RULES:
             "",
             "## Explainability Data",
         ]
-
-        if explainability.get("grad_cam_url"):
-            parts.append("- Grad-CAM heatmap generated (region of interest identified)")
         if explainability.get("shap_url"):
-            parts.append("- SHAP pixel-level attribution generated (positive/negative contributions mapped)")
-
-
+            parts.append("- Pixel-level attribution generated and constrained to the lung mask")
         if rag_context:
-            parts.append("")
-            parts.append("## Relevant Clinical Guidelines")
-            for i, ctx in enumerate(rag_context[:5], 1):
-                truncated = ctx[:500] + "..." if len(ctx) > 500 else ctx
-                parts.append(f"{i}. {truncated}")
-
-        parts.append("")
-        parts.append(
-            "Based on the above data, provide your structured clinical analysis as JSON."
+            parts.extend(["", "## Relevant Clinical Guidelines"])
+            for index, context in enumerate(rag_context[:5], 1):
+                truncated = context[:500] + "..." if len(context) > 500 else context
+                parts.append(f"{index}. {truncated}")
+        parts.extend(
+            [
+                "",
+                "Synthesize one report consistent with the diagnostic model label. Return the required JSON only.",
+            ]
         )
-
         return "\n".join(parts)
 
-    def _parse_response(self, content: str) -> dict:
-
-        cleaned = content.strip()
-
-        code_block = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", cleaned, re.DOTALL)
-        if code_block:
-            cleaned = code_block.group(1).strip()
-
-        json_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-        if json_match:
-            try:
-                parsed = json.loads(json_match.group())
-
-                if "findings" in parsed:
-                    raw = parsed["findings"]
-                    if isinstance(raw, list):
-                        parsed["findings"] = raw
-                    elif isinstance(raw, str) and raw.strip():
-                        parsed["findings"] = [{
-                            "name": raw[:100],
-                            "region": "Lungs",
-                            "severity": "Moderate",
-                            "confidence": parsed.get("confidence", 50),
-                            "description": raw,
-                        }]
-                    elif isinstance(raw, dict):
-                        parsed["findings"] = [raw]
-                    else:
-                        parsed["findings"] = []
-                else:
-                    parsed["findings"] = []
-
-                if "recommendations" not in parsed:
-                    parsed["recommendations"] = []
-                if "summary" not in parsed:
-                    parsed["summary"] = ""
-                parsed.pop("differential_diagnosis", None)
-
-                return parsed
-            except json.JSONDecodeError:
-                pass
-
-        return {
-            "overall_status": "Analysis Complete",
-            "confidence": 0,
-            "findings": [],
-            "recommendations": ["Consult with a qualified radiologist"],
-            "summary": "LLM synthesis was unable to produce structured output. Please rely on the model prediction and explainability maps above.",
-        }
-
-    def fallback_synthesis(self, diagnosis: dict, explainability: dict) -> dict:
+    def fallback_synthesis(self, diagnosis, explainability):
         label = diagnosis.get("label", "Unknown")
-        conf = diagnosis.get("confidence_score", 0.0)
-
-        if label in ("BACTERIAL", "VIRAL"):
+        confidence = diagnosis.get("confidence_score", 0.0)
+        if label in {"BACTERIAL", "VIRAL"}:
             status = "Abnormal"
-            severity = "Moderate" if conf > 0.7 else "Mild"
+            severity = "Moderate" if confidence > 0.7 else "Mild"
         elif label == "NORMAL":
             status = "Normal"
             severity = "Normal"
         else:
             status = "Requires Attention"
             severity = "Mild"
-
-        conf_pct = int(conf * 100)
-
         return {
+            "synthesis_status": "fallback",
             "overall_status": status,
-            "confidence": conf_pct,
+            "confidence": confidence,
             "findings": [
                 {
                     "name": f"Model Prediction: {label}",
                     "region": "Lungs",
                     "severity": severity,
-                    "confidence": conf_pct,
+                    "confidence": confidence,
                     "description": (
-                        f"The CNN model predicted '{label}' with "
-                        f"{conf:.1%} confidence. LLM synthesis was unavailable; "
-                        f"this is a fallback response based on raw model output."
+                        f"The CNN model predicted '{label}' with {confidence:.1%} confidence. "
+                        "LLM synthesis was unavailable; this fallback is based only on model output."
                     ),
                 }
             ],
             "recommendations": [
                 "Consult with a qualified radiologist for clinical interpretation",
-                "LLM synthesis service was unavailable — manual review recommended",
+                "LLM synthesis service was unavailable; manual review is recommended",
             ],
             "summary": (
-                f"Fallback analysis: CNN model predicted {label} with "
-                f"{conf:.1%} confidence. The LLM synthesis step failed. "
-                f"Please review the model output and explainability maps manually."
+                f"Fallback analysis: CNN model predicted {label} with {confidence:.1%} confidence. "
+                "The LLM synthesis step was unavailable. Review the model output manually."
             ),
         }

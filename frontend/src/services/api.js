@@ -8,7 +8,7 @@ const progressSteps = [
   { step: 1, label: 'Preprocessing and normalizing image...' },
   { step: 2, label: 'Segmenting lung regions...' },
   { step: 3, label: 'Classifying with EfficientNet-B2...' },
-  { step: 4, label: 'Generating Grad-CAM and SHAP maps...' },
+  { step: 4, label: 'Generating SHAP attribution maps...' },
   { step: 5, label: 'Retrieving context and generating report...' },
 ];
 
@@ -33,4 +33,20 @@ export async function analyzeXray(imageFile, onProgress) {
     throw new Error(data.error || 'Analysis failed');
   }
   return data.result;
+}
+
+export async function analyzeBatch(imageFiles, onProgress) {
+  const formData = new FormData();
+  for (const f of imageFiles) {
+    formData.append('xrays', f);
+  }
+  onProgress?.({ step: 0, label: `Uploading ${imageFiles.length} images...`, progress: 10 });
+  const response = await fetch('/api/analyze-batch', { method: 'POST', body: formData });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Batch analysis failed');
+  }
+  // data.results = [{filename, result} or {filename, error}]
+  onProgress?.({ step: 5, label: `Completed ${data.ok}/${data.count} images`, progress: 100 });
+  return data;
 }

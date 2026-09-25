@@ -27,12 +27,12 @@ const diseaseInfo = {
     id: 'symptoms',
     title: 'Common Symptoms',
     items: [
-      { name: 'Chest Pain', description: 'Pain when you breathe or cough', icon: '⚡' },
-      { name: 'Confusion', description: 'Changes in mental awareness (in adults age 65 and older)', icon: '🧠' },
-      { name: 'Cough', description: 'Cough, which may produce phlegm', icon: '🗣️' },
-      { name: 'Fatigue', description: 'Feeling tired and weak', icon: '🥱' },
-      { name: 'Fever', description: 'Fever, sweating and shaking chills', icon: '🤒' },
-      { name: 'Shortness of Breath', description: 'Lower than normal body temperature (in adults older than age 65)', icon: '😮‍💨' }
+      { name: 'Fever', description: 'Fever, sweating and shaking chills — often the first sign', icon: '🤒' },
+      { name: 'Cough', description: 'Persistent cough which may produce greenish, yellow or blood-tinged phlegm', icon: '🗣️' },
+      { name: 'Shortness of Breath', description: 'Difficult or labored breathing, breathlessness even at rest or on light exertion', icon: '😮‍💨' },
+      { name: 'Chest Pain', description: 'Sharp or stabbing chest pain that worsens when you breathe deeply or cough', icon: '⚡' },
+      { name: 'Fatigue', description: 'Extreme tiredness and weakness, general feeling of being unwell', icon: '🥱' },
+      { name: 'Confusion', description: 'Changes in mental awareness — notably in adults age 65+ (ATS/IDSA)', icon: '🧠' }
     ]
   },
   prevention: {

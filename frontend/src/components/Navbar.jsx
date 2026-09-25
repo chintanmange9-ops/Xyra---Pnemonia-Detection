@@ -15,10 +15,10 @@ const Navbar = ({ activeSection }) => {
 
   const navLinks = [
     { name: 'Home', id: 'home' },
+    { name: 'Diagnose', id: 'upload' },
     { name: 'About', id: 'about' },
     { name: 'How It Works', id: 'how-it-works' },
     { name: 'Awareness', id: 'awareness' },
-    { name: 'Diagnose', id: 'upload' },
     { name: 'Team', id: 'team' },
   ];
 

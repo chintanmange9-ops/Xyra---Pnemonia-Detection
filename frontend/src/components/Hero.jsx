@@ -27,7 +27,7 @@ const Hero = () => {
               Powered by Intelligence
             </h1>
             <p className="hero-description">
-              Analyze medical images with unprecedented accuracy. Our advanced AI command center assists healthcare professionals in detecting anomalies faster and more reliably.
+              Analyze chest X-rays with high accuracy on in-distribution data. Our AI-assisted pipeline supports radiologists by highlighting patterns consistent with pneumonia and providing evidence-linked reports.
             </p>
             
             <div className="hero-actions">

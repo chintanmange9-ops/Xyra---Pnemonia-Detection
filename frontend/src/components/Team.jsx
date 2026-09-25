@@ -41,13 +41,7 @@ const Team = () => {
             <path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/>
           </svg>
         );
-      case 'gemini':
-        return (
-          <svg className="tech-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2z"/>
-          </svg>
-        );
-      case 'gemini':
+      case 'openrouter':
         return (
           <svg className="tech-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2z"/>

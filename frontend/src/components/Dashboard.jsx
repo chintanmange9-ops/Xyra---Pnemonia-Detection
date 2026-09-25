@@ -5,7 +5,6 @@ import BarChart from './ui/BarChart';
 import TypewriterText from './ui/TypewriterText';
 import ScrollReveal from './ui/ScrollReveal';
 import Tilt3D from './ui/Tilt3D';
-import ImageSlider from './ui/ImageSlider';
 
 const Dashboard = ({ results, imageUrl, onReset }) => {
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -13,7 +12,7 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
 
   if (!results) return null;
 
-  const { probabilities, prediction, isValidated, shapAnalysis, report, regions, recommendations } = results;
+  const { probabilities, prediction, isValidated, status, shapAnalysis, report, regions, recommendations } = results;
 
   const getPredictionColor = (pred) => {
     switch (pred) {
@@ -46,19 +45,14 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
 
       <div className="dashboard-grid">
         <div className="dashboard-scan-line"></div>
-        {/* Top Row: Images */}
+        {/* Top Row: Original X-Ray (Grad-CAM removed) */}
         <div className="top-row">
           <ScrollReveal delay={100}>
             <Tilt3D maxTilt={4} scale={1.01}>
               <div className="card image-card">
-                <h3 className="card-title">Grad-CAM Analysis</h3>
-                <div className="image-wrapper scan-on-view heatmap-wrapper">
-                  <ImageSlider
-                    beforeSrc={imageUrl}
-                    afterSrc={results.gradcamUrl || imageUrl}
-                    beforeLabel="Original"
-                    afterLabel="Grad-CAM"
-                  />
+                <h3 className="card-title">Chest X-Ray</h3>
+                <div className="image-wrapper">
+                  <img src={imageUrl} alt="Chest X-Ray" className="display-image" style={{width:'100%', borderRadius:'8px'}} />
                 </div>
               </div>
             </Tilt3D>
@@ -84,7 +78,7 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
                   ) : (
                     <>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                      <span>Requires Clinical Validation</span>
+                      <span>{status === 'FALLBACK' ? 'Degraded Result — Clinical Review Required' : 'Requires Clinical Validation'}</span>
                     </>
                   )}
                 </div>
@@ -158,8 +152,8 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
             <Tilt3D maxTilt={4} scale={1.01}>
               <div className="card report-card">
                 <div className="report-header">
-                  <h3 className="card-title">AI-Generated Diagnostic Report</h3>
-                  <span className="badge">Powered by RAG + LLM</span>
+                  <h3 className="card-title">Clinical Analysis Report</h3>
+                  <span className="badge">{status === 'APPROVED' ? 'Powered by RAG + OpenRouter' : 'Fallback Report'}</span>
                 </div>
                 
                 <div className="report-content">
@@ -219,7 +213,7 @@ const Dashboard = ({ results, imageUrl, onReset }) => {
           </ScrollReveal>
         </div>
 
-        {/* Grad-CAM Regions */}
+        {/* Detected Regions */}
         <ScrollReveal delay={900}>
           <Tilt3D maxTilt={4} scale={1.01}>
             <div className="card regions-card">

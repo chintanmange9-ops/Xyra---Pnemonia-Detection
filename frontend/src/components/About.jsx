@@ -7,7 +7,7 @@ const About = () => {
   const features = [
     {
       title: 'Image Preprocessing',
-      description: 'Advanced preprocessing pipeline with CLAHE enhancement and normalization, ensuring consistent quality across different X-ray scanner types for accurate analysis.',
+      description: 'Resizing to 384×384 and ImageNet normalization (mean 0.485/0.456/0.406, std 0.229/0.224/0.225) to match EfficientNet-B2 training; CLAHE available for visualization only.',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feature-icon">
           <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
@@ -18,7 +18,7 @@ const About = () => {
     },
     {
       title: 'EfficientNet-B2',
-      description: 'Advanced lightweight neural network architecture fine-tuned for classifying normal, bacterial, and viral pneumonia with state-of-the-art precision.',
+      description: 'EfficientNet-B2 (7.7M params, 384px) fine-tuned for 3-class Normal/Bacterial/Viral pneumonia — high accuracy on in-distribution raw X-rays (93–96% top-1 on fresh external 30) and 86–99% on segmented hold-outs.',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feature-icon">
           <circle cx="12" cy="12" r="10"></circle>
@@ -28,8 +28,8 @@ const About = () => {
       )
     },
     {
-      title: 'Grad-CAM & SHAP',
-      description: 'Provides visual heatmaps and feature importance scores to explain AI decisions, ensuring transparency and building trust with clinical practitioners.',
+      title: 'SHAP Explainability',
+      description: 'Provides SHAP attribution maps and feature importance scores to explain AI decisions, ensuring transparency and building trust with clinical practitioners.',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feature-icon">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>

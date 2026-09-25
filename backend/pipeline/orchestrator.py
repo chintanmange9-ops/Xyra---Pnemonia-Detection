@@ -77,7 +77,7 @@ class PipelineOrchestrator:
             }
         print(f"[Pipeline] Module 2 done in {time.time()-t0:.1f}s")
 
-        # Module 3: Explainability (Grad-CAM + Attribution)
+        # Module 3: Explainability (SHAP Attribution only — Grad-CAM removed)
         t0 = time.time()
         try:
             print("[Pipeline] Module 3: Explainability...")
@@ -197,6 +197,8 @@ class PipelineOrchestrator:
         probs = diagnosis.get("probabilities", {})
         validation = full_result.get("validation", {})
         explainability = full_result.get("explainability", {})
+        pipeline_status = full_result.get("pipeline_status", "UNKNOWN")
+        is_validated = pipeline_status == "APPROVED" and validation.get("overall_pass") is True
 
         frontend = {
             "case_id": full_result.get("case_id", ""),
@@ -207,8 +209,8 @@ class PipelineOrchestrator:
                 "viral": round(probs.get("VIRAL", 0.0), 4),
             },
             "confidence": full_result.get("confidence", 0),
-            "isValidated": bool(validation.get("overall_pass", True)),
-            "status": full_result.get("pipeline_status", "UNKNOWN"),
+            "isValidated": is_validated,
+            "status": pipeline_status,
             "overallStatus": full_result.get("overall_status", "Requires Attention"),
             "imageQuality": full_result.get("image_quality", "Good"),
             "processingTime": full_result.get("processing_time", 0),
@@ -246,11 +248,20 @@ class PipelineOrchestrator:
                 continue
             if not text:
                 continue
+            # year: try text, then fallback to source filename (e.g., koo-et-al-2020-..., ATS_IDSA_2019)
             year_match = re.search(r"\b(19|20)\d{2}\b", text)
+            if not year_match and isinstance(item, dict):
+                raw_src = item.get("source", "")
+                year_match = re.search(r"\b(19|20)\d{2}\b", raw_src)
+            # also include page for PDF chunks
+            page = item.get("page", 0) if isinstance(item, dict) else 0
+            journal_display = source_name
+            if page and page != 0 and source_name != "PubMed":
+                journal_display = f"{source_name} · p. {page}"
             sources.append({
                 "title": text[:110] + ("..." if len(text) > 110 else ""),
                 "text": text,
-                "journal": source_name,
+                "journal": journal_display,
                 "year": year_match.group(0) if year_match else "N/A",
             })
         return sources

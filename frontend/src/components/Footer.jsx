@@ -28,7 +28,7 @@ const Footer = () => {
             </a>
 
             <p className="footer-desc">
-              Explainable AI dashboard for chest X-ray disease detection. Powered by EfficientNet-B2, Grad-CAM, SHAP, and RAG-augmented clinical report generation.
+              Explainable AI dashboard for chest X-ray disease detection. Powered by EfficientNet-B2, SHAP, and RAG-augmented clinical report generation.
             </p>
 
             <div className="footer-disclaimer">
@@ -73,7 +73,7 @@ const Footer = () => {
                 </li>
                 <li>
                   <span className="detail-label">Stack</span>
-                  <span className="detail-val">EfficientNet-B2 + XAI + FAISS + DeepSeek LLM</span>
+                  <span className="detail-val">EfficientNet-B2 + XAI + FAISS + OpenRouter LLM</span>
                 </li>
               </ul>
 

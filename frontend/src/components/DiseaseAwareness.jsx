@@ -56,18 +56,18 @@ const DiseaseAwareness = () => {
               <div className="stats-container">
                 <ScrollReveal delay={400} className="stat-card">
                   <div className="stat-icon">🌍</div>
-                  <h4 className="stat-number">2.5M</h4>
-                  <p className="stat-label">deaths annually worldwide</p>
+                  <h4 className="stat-number">~2.5M</h4>
+                  <p className="stat-label">lower-respiratory deaths/yr (WHO 2021) — pneumonia major contributor</p>
                 </ScrollReveal>
                 <ScrollReveal delay={500} className="stat-card">
                   <div className="stat-icon">👶</div>
                   <h4 className="stat-number">Leading</h4>
-                  <p className="stat-label">cause of death in children under 5</p>
+                  <p className="stat-label">infectious cause of death in children &lt;5y (WHO)</p>
                 </ScrollReveal>
                 <ScrollReveal delay={600} className="stat-card">
                   <div className="stat-icon">🏥</div>
                   <h4 className="stat-number">#1</h4>
-                  <p className="stat-label">reason for hospitalization</p>
+                  <p className="stat-label">US childhood hospitalization reason (HCUP) — pneumonia</p>
                 </ScrollReveal>
               </div>
             </div>
@@ -100,16 +100,16 @@ const DiseaseAwareness = () => {
             </div>
           )}
 
-          {/* SYMPTOMS TAB */}
+          {/* SYMPTOMS TAB — unified with data/diseaseInfo.js (ATS/IDSA) */}
           {activeTab === 'symptoms' && (
             <div className="tab-pane active fade-in symptoms-grid">
               {[
-                { icon: '🤒', name: 'High Fever', desc: 'Sudden spike in body temperature, often accompanied by sweating.' },
-                { icon: '🥶', name: 'Chills', desc: 'Severe shivering and feeling cold despite a fever.' },
-                { icon: '😮‍💨', name: 'Shortness of Breath', desc: 'Difficulty breathing even when resting or performing light tasks.' },
-                { icon: '😷', name: 'Persistent Cough', desc: 'Cough that may produce greenish, yellow or even bloody mucus.' },
-                { icon: '💔', name: 'Chest Pain', desc: 'Sharp or stabbing chest pain that worsens when you breathe deeply or cough.' },
-                { icon: '🥱', name: 'Fatigue', desc: 'Extreme tiredness, lethargy, and a general feeling of being unwell.' }
+                { icon: '🤒', name: 'Fever', desc: 'Fever, sweating and shaking chills — often the first sign.' },
+                { icon: '🗣️', name: 'Cough', desc: 'Persistent cough which may produce greenish, yellow or blood-tinged phlegm.' },
+                { icon: '😮‍💨', name: 'Shortness of Breath', desc: 'Difficult or labored breathing, breathlessness even at rest or on light exertion.' },
+                { icon: '⚡', name: 'Chest Pain', desc: 'Sharp or stabbing chest pain that worsens when you breathe deeply or cough.' },
+                { icon: '🥱', name: 'Fatigue', desc: 'Extreme tiredness and weakness, general feeling of being unwell.' },
+                { icon: '🧠', name: 'Confusion', desc: 'Changes in mental awareness — notably in adults age 65+ (ATS/IDSA).' }
               ].map((symptom, index) => (
                 <ScrollReveal key={index} delay={300 + (index * 100)} className="symptom-card">
                   <div className="symptom-icon">{symptom.icon}</div>

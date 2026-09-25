@@ -162,4 +162,4 @@ def generate_report(results: dict) -> bytes:
         "may contain errors. Clinical correlation is always recommended."
     ))
 
-    return bytes(pdf.output(dest="S"))
+    return pdf.output(dest="S").encode("latin-1")
